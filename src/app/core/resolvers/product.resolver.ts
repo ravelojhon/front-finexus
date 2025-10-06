@@ -4,14 +4,14 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 import { ProductService } from '../services/product.service';
-import { Product } from '../models/product.model';
+import { Product } from '../models/product.interface';
 
 // Resolver para la lista de productos
 export const productsResolver: ResolveFn<Product[]> = (route, state): Observable<Product[]> => {
   const productService = inject(ProductService);
   const router = inject(Router);
 
-  return productService.getProducts().pipe(
+  return productService.getAll().pipe(
     catchError(error => {
       console.error('Error cargando productos:', error);
       router.navigate(['/products']);
@@ -31,7 +31,7 @@ export const productResolver: ResolveFn<Product> = (route, state): Observable<Pr
     return throwError(() => new Error('ID de producto inválido'));
   }
 
-  return productService.getProductById(Number(id)).pipe(
+  return productService.getById(Number(id)).pipe(
     catchError(error => {
       console.error('Error cargando producto:', error);
       router.navigate(['/products']);
