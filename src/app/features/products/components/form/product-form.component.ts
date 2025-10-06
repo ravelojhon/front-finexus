@@ -1,7 +1,22 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Subject, takeUntil } from 'rxjs';
+
+import { environment } from '../../../../../environments/environment';
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  stock: number;
+  category: string | null;
+  createdAt: string;
+  updatedAt: string;
+  description?: string;
+}
 
 @Component({
   selector: 'app-product-form',
@@ -14,6 +29,10 @@ import { CommonModule } from '@angular/common';
         <button class="btn btn-secondary" (click)="goBack()">
           Volver
         </button>
+      </div>
+
+      <div class="error-message" *ngIf="hasError">
+        <p>{{ errorMessage || 'Error al procesar la solicitud' }}</p>
       </div>
 
       <form [formGroup]="productForm" (ngSubmit)="onSubmit()" class="product-form">
@@ -95,8 +114,8 @@ import { CommonModule } from '@angular/common';
           <button 
             type="submit" 
             class="btn btn-primary" 
-            [disabled]="productForm.invalid || isSubmitting">
-            {{ isSubmitting ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear') }}
+            [disabled]="productForm.invalid || isLoading">
+            {{ isLoading ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear') }}
           </button>
         </div>
       </form>
@@ -199,22 +218,26 @@ import { CommonModule } from '@angular/common';
     }
   `]
 })
-export class ProductFormComponent implements OnInit {
+export class ProductFormComponent implements OnInit, OnDestroy {
   productForm: FormGroup;
   isEditMode = false;
-  isSubmitting = false;
+  isLoading = false;
+  errorMessage = '';
+  productId: number | null = null;
+  
+  private destroy$ = new Subject<void>();
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private http: HttpClient
   ) {
     this.productForm = this.fb.group({
-      name: ['', [Validators.required]],
-      description: [''],
+      name: ['', [Validators.required, Validators.minLength(2)]],
       price: [0, [Validators.required, Validators.min(0.01)]],
       stock: [0, [Validators.required, Validators.min(0)]],
-      category: ['', [Validators.required]]
+      category: ['']
     });
   }
 
@@ -222,28 +245,87 @@ export class ProductFormComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode = true;
-      this.loadProduct(parseInt(id));
+      this.productId = parseInt(id);
+      this.loadProduct(this.productId);
     }
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadProduct(id: number): void {
-    // TODO: Implementar carga de producto por ID
-    console.log('Cargar producto:', id);
+    this.isLoading = true;
+    this.http.get<Product>(`${environment.apiUrl}/products/${id}`).subscribe({
+      next: (product) => {
+        this.productForm.patchValue({
+          name: product.name,
+          price: product.price,
+          stock: product.stock,
+          category: product.category || ''
+        });
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('❌ Error cargando producto:', error);
+        this.errorMessage = 'Error al cargar el producto';
+        this.isLoading = false;
+      }
+    });
   }
 
   onSubmit(): void {
     if (this.productForm.valid) {
-      this.isSubmitting = true;
-      // TODO: Implementar guardado de producto
-      console.log('Guardar producto:', this.productForm.value);
-      setTimeout(() => {
-        this.isSubmitting = false;
-        this.goBack();
-      }, 1000);
+      const formData = this.productForm.value;
+      
+      if (this.isEditMode && this.productId) {
+        this.updateProduct(this.productId, formData);
+      } else {
+        this.createProduct(formData);
+      }
+    } else {
+      this.productForm.markAllAsTouched();
     }
+  }
+
+  private createProduct(productData: any): void {
+    this.isLoading = true;
+    this.http.post<Product>(`${environment.apiUrl}/products`, productData).subscribe({
+      next: (newProduct) => {
+        console.log('✅ Producto creado:', newProduct);
+        this.isLoading = false;
+        this.goBack();
+      },
+      error: (error) => {
+        console.error('❌ Error creando producto:', error);
+        this.errorMessage = 'Error al crear el producto';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  private updateProduct(id: number, productData: any): void {
+    this.isLoading = true;
+    this.http.put<Product>(`${environment.apiUrl}/products/${id}`, productData).subscribe({
+      next: (updatedProduct) => {
+        console.log('✅ Producto actualizado:', updatedProduct);
+        this.isLoading = false;
+        this.goBack();
+      },
+      error: (error) => {
+        console.error('❌ Error actualizando producto:', error);
+        this.errorMessage = 'Error al actualizar el producto';
+        this.isLoading = false;
+      }
+    });
   }
 
   goBack(): void {
     this.router.navigate(['/products']);
+  }
+
+  get hasError(): boolean {
+    return !!this.errorMessage;
   }
 }

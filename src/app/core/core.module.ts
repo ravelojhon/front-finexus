@@ -4,6 +4,7 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
 
 import { ApiService } from './services/api.service';
 import { ErrorHandlerService } from './services/error-handler.service';
+import { ProductService } from './services/product.service';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { ErrorInterceptor } from './interceptors/error.interceptor';
 
@@ -15,6 +16,7 @@ import { ErrorInterceptor } from './interceptors/error.interceptor';
   providers: [
     ApiService,
     ErrorHandlerService,
+    ProductService,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,

@@ -1,17 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Subject, takeUntil } from 'rxjs';
+
+import { environment } from '../../../../../environments/environment';
 
 export interface Product {
   id: number;
   name: string;
-  description: string;
   price: number;
-  category: string;
   stock: number;
-  createdAt: Date;
-  updatedAt: Date;
+  category: string | null;
+  createdAt: string;
+  updatedAt: string;
+  description?: string;
 }
+
+// La interfaz Product ahora viene del modelo
 
 @Component({
   selector: 'app-product-detail',
@@ -36,7 +42,12 @@ export interface Product {
         <p class="loading-text">Cargando producto...</p>
       </div>
 
-      <div class="product-detail" *ngIf="!isLoading && product">
+      <div class="error-message" *ngIf="hasError">
+        <p>{{ errorMessage || 'Error al cargar el producto' }}</p>
+        <button class="btn btn-primary" (click)="goBack()">Volver a la lista</button>
+      </div>
+
+      <div class="product-detail" *ngIf="!isLoading && !hasError && product">
         <div class="product-header">
           <h1>{{ product.name }}</h1>
           <span class="category-badge">{{ product.category }}</span>
@@ -272,22 +283,73 @@ export interface Product {
       color: #666;
       font-size: 0.9rem;
     }
+
+    .error-message {
+      text-align: center;
+      padding: 2rem;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 8px;
+      margin: 1rem 0;
+      color: #721c24;
+    }
+
+    .error-message p {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+    }
+
+    .error-message .btn {
+      padding: 0.75rem 1.5rem;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .error-message .btn:hover {
+      background-color: #c82333;
+    }
   `]
 })
-export class ProductDetailComponent implements OnInit {
+export class ProductDetailComponent implements OnInit, OnDestroy {
   product: Product | null = null;
   isLoading = false;
+  errorMessage = '';
+  
+  private destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private http: HttpClient
   ) { }
 
   ngOnInit(): void {
-    // Los datos vienen del resolver, no necesitamos cargar manualmente
-    this.route.data.subscribe(data => {
-      if (data['product']) {
-        this.product = data['product'];
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.loadProduct(parseInt(id));
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  loadProduct(id: number): void {
+    this.isLoading = true;
+    this.http.get<Product>(`${environment.apiUrl}/products/${id}`).subscribe({
+      next: (product) => {
+        this.product = product;
+        this.isLoading = false;
+        console.log('✅ Producto cargado:', product);
+      },
+      error: (error) => {
+        console.error('❌ Error cargando producto:', error);
+        this.errorMessage = 'Error al cargar el producto';
         this.isLoading = false;
       }
     });
@@ -300,8 +362,22 @@ export class ProductDetailComponent implements OnInit {
   }
 
   deleteProduct(): void {
-    // TODO: Implementar confirmación y eliminación
-    console.log('Eliminar producto:', this.product?.id);
+    if (this.product && confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+      this.http.delete(`${environment.apiUrl}/products/${this.product.id}`).subscribe({
+        next: () => {
+          console.log('✅ Producto eliminado exitosamente');
+          this.router.navigate(['/products']);
+        },
+        error: (error) => {
+          console.error('❌ Error eliminando producto:', error);
+          this.errorMessage = 'Error al eliminar el producto';
+        }
+      });
+    }
+  }
+
+  get hasError(): boolean {
+    return !!this.errorMessage;
   }
 
   goBack(): void {

@@ -1,16 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule, CurrencyPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { Subject, takeUntil } from 'rxjs';
+
+import { environment } from '../../../../../environments/environment';
 
 export interface Product {
   id: number;
   name: string;
-  description: string;
   price: number;
-  category: string;
   stock: number;
-  createdAt: Date;
+  category: string | null;
+  createdAt: string;
+  updatedAt: string;
+  description?: string;
 }
+
+// La interfaz Product ahora viene del modelo
 
 @Component({
   selector: 'app-product-list',
@@ -30,7 +37,12 @@ export interface Product {
         <p class="loading-text">Cargando productos...</p>
       </div>
 
-      <div class="products-grid" *ngIf="!isLoading">
+      <div class="error-message" *ngIf="hasError">
+        <p>{{ errorMessage || 'Error al cargar los productos' }}</p>
+        <button class="btn btn-primary" (click)="refreshProducts()">Reintentar</button>
+      </div>
+
+      <div class="products-grid" *ngIf="!isLoading && !hasError">
         <div class="product-card" *ngFor="let product of products">
           <div class="product-info">
             <h3>{{ product.name }}</h3>
@@ -189,25 +201,73 @@ export interface Product {
       color: #666;
       font-size: 0.9rem;
     }
+
+    .error-message {
+      text-align: center;
+      padding: 2rem;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 8px;
+      margin: 1rem 0;
+      color: #721c24;
+    }
+
+    .error-message p {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+    }
+
+    .error-message .btn {
+      padding: 0.75rem 1.5rem;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .error-message .btn:hover {
+      background-color: #c82333;
+    }
   `]
 })
-export class ProductListComponent implements OnInit {
+export class ProductListComponent implements OnInit, OnDestroy {
   products: Product[] = [];
   isLoading = false;
+  errorMessage = '';
+  
+  private destroy$ = new Subject<void>();
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private http: HttpClient
   ) { }
 
   ngOnInit(): void {
-    // Los datos vienen del resolver, no necesitamos cargar manualmente
-    this.route.data.subscribe(data => {
-      if (data['products']) {
-        this.products = data['products'];
+    this.loadProducts();
+  }
+
+  loadProducts(): void {
+    this.isLoading = true;
+    this.http.get<Product[]>(`${environment.apiUrl}/products`).subscribe({
+      next: (products) => {
+        this.products = products;
+        this.isLoading = false;
+        console.log('✅ Productos cargados:', products);
+      },
+      error: (error) => {
+        console.error('❌ Error cargando productos:', error);
+        this.errorMessage = 'Error al cargar los productos';
         this.isLoading = false;
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   navigateToNew(): void {
@@ -223,7 +283,25 @@ export class ProductListComponent implements OnInit {
   }
 
   deleteProduct(id: number): void {
-    // TODO: Implementar confirmación y eliminación
-    console.log('Eliminar producto:', id);
+    if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+      this.http.delete(`${environment.apiUrl}/products/${id}`).subscribe({
+        next: () => {
+          console.log('✅ Producto eliminado exitosamente');
+          this.loadProducts(); // Recargar la lista
+        },
+        error: (error) => {
+          console.error('❌ Error eliminando producto:', error);
+          this.errorMessage = 'Error al eliminar el producto';
+        }
+      });
+    }
+  }
+
+  refreshProducts(): void {
+    this.loadProducts();
+  }
+
+  get hasError(): boolean {
+    return !!this.errorMessage;
   }
 }
