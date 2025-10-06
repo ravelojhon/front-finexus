@@ -6,12 +6,6 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/dist/gestion-productos/index.html"
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
