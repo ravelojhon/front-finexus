@@ -5,6 +5,7 @@
 export interface Product {
   id: number;
   name: string;
+  description?: string;
   price: number;
   stock: number;
   category?: string | null;
@@ -17,6 +18,7 @@ export interface Product {
  */
 export interface CreateProduct {
   name: string;
+  description?: string;
   price: number;
   stock: number;
   category?: string;
@@ -27,6 +29,7 @@ export interface CreateProduct {
  */
 export interface UpdateProduct {
   name?: string;
+  description?: string;
   price?: number;
   stock?: number;
   category?: string;
@@ -84,4 +87,14 @@ export interface PaginatedResponse<T> {
     total: number;
     totalPages: number;
   };
+}
+
+/**
+ * Enum para estados de carga
+ */
+export enum LoadingState {
+  IDLE = 'IDLE',
+  LOADING = 'LOADING',
+  SUCCESS = 'SUCCESS',
+  ERROR = 'ERROR'
 }

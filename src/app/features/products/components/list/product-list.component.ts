@@ -1,234 +1,335 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
 
-import { environment } from '../../../../../environments/environment';
-
-export interface Product {
-  id: number;
-  name: string;
-  price: number;
-  stock: number;
-  category: string | null;
-  createdAt: string;
-  updatedAt: string;
-  description?: string;
-}
-
-// La interfaz Product ahora viene del modelo
+import { ProductService } from '../../../../core/services/product.service';
+import { Product, LoadingState } from '../../../../core/models/product.interface';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CurrencyPipe],
   template: `
-    <div class="product-list-container">
-      <div class="header">
-        <h2>Lista de Productos</h2>
-        <button class="btn btn-primary" (click)="navigateToNew()">
-          Nuevo Producto
-        </button>
-      </div>
-
-      <div class="loading-spinner" *ngIf="isLoading">
-        <div class="spinner"></div>
-        <p class="loading-text">Cargando productos...</p>
-      </div>
-
-      <div class="error-message" *ngIf="hasError">
-        <p>{{ errorMessage || 'Error al cargar los productos' }}</p>
-        <button class="btn btn-primary" (click)="refreshProducts()">Reintentar</button>
-      </div>
-
-      <div class="products-grid" *ngIf="!isLoading && !hasError">
-        <div class="product-card" *ngFor="let product of products">
-          <div class="product-info">
-            <h3>{{ product.name }}</h3>
-            <p class="description">{{ product.description }}</p>
-            <div class="product-details">
-              <span class="price">{{ product.price | currency:'EUR' }}</span>
-              <span class="category">{{ product.category }}</span>
-              <span class="stock">Stock: {{ product.stock }}</span>
-            </div>
-          </div>
-          <div class="product-actions">
-            <button class="btn btn-sm btn-outline" (click)="viewProduct(product.id)">
-              Ver
-            </button>
-            <button class="btn btn-sm btn-primary" (click)="editProduct(product.id)">
-              Editar
-            </button>
-            <button class="btn btn-sm btn-danger" (click)="deleteProduct(product.id)">
-              Eliminar
+    <div class="container-fluid py-4">
+      <!-- Header -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+              <i class="fas fa-boxes me-2"></i>
+              Lista de Productos
+            </h2>
+            <button class="btn btn-primary" (click)="navigateToNew()">
+              <i class="fas fa-plus me-2"></i>
+              Nuevo Producto
             </button>
           </div>
         </div>
       </div>
 
-      <div class="empty-state" *ngIf="!isLoading && products.length === 0">
-        <p>No hay productos disponibles</p>
-        <button class="btn btn-primary" (click)="navigateToNew()">
-          Crear primer producto
-        </button>
+      <!-- Loading State -->
+      <div class="row" *ngIf="isLoading">
+        <div class="col-12">
+          <div class="d-flex justify-content-center align-items-center py-5">
+            <div class="text-center">
+              <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <p class="text-muted">Cargando productos...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="row" *ngIf="hasError">
+        <div class="col-12">
+          <div class="alert alert-danger d-flex align-items-center" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <div class="flex-grow-1">
+              <strong>Error:</strong> {{ errorMessage || 'Error al cargar los productos' }}
+            </div>
+            <button class="btn btn-outline-danger btn-sm" (click)="refreshProducts()">
+              <i class="fas fa-redo me-1"></i>
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Table -->
+      <div class="row" *ngIf="!isLoading && !hasError">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white">
+              <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                  <i class="fas fa-list me-2"></i>
+                  Productos ({{ products.length }})
+                </h5>
+                <div class="btn-group" role="group">
+                  <button class="btn btn-outline-secondary btn-sm" (click)="refreshProducts()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Actualizar
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <!-- Desktop Table -->
+              <div class="table-responsive d-none d-lg-block">
+                <table class="table table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th scope="col" class="border-0">ID</th>
+                      <th scope="col" class="border-0">Nombre</th>
+                      <th scope="col" class="border-0">Categoría</th>
+                      <th scope="col" class="border-0 text-end">Precio</th>
+                      <th scope="col" class="border-0 text-center">Stock</th>
+                      <th scope="col" class="border-0 text-center">Estado</th>
+                      <th scope="col" class="border-0 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let product of products; trackBy: trackByProductId">
+                      <td class="align-middle">
+                        <span class="badge bg-secondary">#{{ product.id }}</span>
+                      </td>
+                      <td class="align-middle">
+                        <div>
+                          <strong>{{ product.name }}</strong>
+                          <small class="text-muted d-block" *ngIf="product.description">
+                            {{ product.description | slice:0:50 }}{{ product.description.length > 50 ? '...' : '' }}
+                          </small>
+                        </div>
+                      </td>
+                      <td class="align-middle">
+                        <span class="badge bg-info" *ngIf="product.category; else noCategory">
+                          {{ product.category }}
+                        </span>
+                        <ng-template #noCategory>
+                          <span class="text-muted">Sin categoría</span>
+                        </ng-template>
+                      </td>
+                      <td class="align-middle text-end">
+                        <strong class="text-success">{{ product.price | currency:'EUR':'symbol':'1.2-2' }}</strong>
+                      </td>
+                      <td class="align-middle text-center">
+                        <span class="badge" 
+                              [class.bg-success]="product.stock > 10"
+                              [class.bg-warning]="product.stock > 0 && product.stock <= 10"
+                              [class.bg-danger]="product.stock === 0">
+                          {{ product.stock }}
+                        </span>
+                      </td>
+                      <td class="align-middle text-center">
+                        <span class="badge" 
+                              [class.bg-success]="product.stock > 0"
+                              [class.bg-danger]="product.stock === 0">
+                          {{ product.stock > 0 ? 'Disponible' : 'Agotado' }}
+                        </span>
+                      </td>
+                      <td class="align-middle text-center">
+                        <div class="btn-group" role="group">
+                          <button class="btn btn-outline-primary btn-sm" 
+                                  (click)="viewProduct(product.id)"
+                                  title="Ver detalles">
+                            <i class="fas fa-eye"></i>
+                          </button>
+                          <button class="btn btn-outline-warning btn-sm" 
+                                  (click)="editProduct(product.id)"
+                                  title="Editar">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="btn btn-outline-danger btn-sm" 
+                                  (click)="deleteProduct(product.id)"
+                                  title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Mobile Cards -->
+              <div class="d-lg-none">
+                <div class="p-3" *ngFor="let product of products; trackBy: trackByProductId">
+                  <div class="card mb-3">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0">{{ product.name }}</h6>
+                        <span class="badge bg-secondary">#{{ product.id }}</span>
+                      </div>
+                      
+                      <p class="card-text text-muted small mb-2" *ngIf="product.description">
+                        {{ product.description | slice:0:80 }}{{ product.description.length > 80 ? '...' : '' }}
+                      </p>
+                      
+                      <div class="row mb-3">
+                        <div class="col-6">
+                          <small class="text-muted">Categoría:</small>
+                          <div>
+                            <span class="badge bg-info" *ngIf="product.category; else noCategoryMobile">
+                              {{ product.category }}
+                            </span>
+                            <ng-template #noCategoryMobile>
+                              <span class="text-muted small">Sin categoría</span>
+                            </ng-template>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <small class="text-muted">Stock:</small>
+                          <div>
+                            <span class="badge" 
+                                  [class.bg-success]="product.stock > 10"
+                                  [class.bg-warning]="product.stock > 0 && product.stock <= 10"
+                                  [class.bg-danger]="product.stock === 0">
+                              {{ product.stock }} {{ product.stock > 0 ? 'Disponible' : 'Agotado' }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="d-flex justify-content-between align-items-center">
+                        <strong class="text-success h5 mb-0">
+                          {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
+                        </strong>
+                        <div class="btn-group" role="group">
+                          <button class="btn btn-outline-primary btn-sm" 
+                                  (click)="viewProduct(product.id)"
+                                  title="Ver">
+                            <i class="fas fa-eye"></i>
+                          </button>
+                          <button class="btn btn-outline-warning btn-sm" 
+                                  (click)="editProduct(product.id)"
+                                  title="Editar">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="btn btn-outline-danger btn-sm" 
+                                  (click)="deleteProduct(product.id)"
+                                  title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="row" *ngIf="!isLoading && !hasError && products.length === 0">
+        <div class="col-12">
+          <div class="text-center py-5">
+            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No hay productos disponibles</h4>
+            <p class="text-muted mb-4">Comienza creando tu primer producto</p>
+            <button class="btn btn-primary" (click)="navigateToNew()">
+              <i class="fas fa-plus me-2"></i>
+              Crear primer producto
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `,
   styles: [`
-    .product-list-container {
-      padding: 2rem;
+    .table th {
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
+    .table td {
+      vertical-align: middle;
     }
 
-    .products-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 500;
     }
 
-    .product-card {
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 1.5rem;
-      background: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .btn-group .btn {
+      border-radius: 0.375rem;
+      margin: 0 1px;
     }
 
-    .product-info h3 {
-      margin: 0 0 0.5rem 0;
-      color: #333;
+    .btn-group .btn:first-child {
+      border-top-left-radius: 0.375rem;
+      border-bottom-left-radius: 0.375rem;
     }
 
-    .description {
-      color: #666;
-      margin: 0 0 1rem 0;
-      font-size: 0.9rem;
+    .btn-group .btn:last-child {
+      border-top-right-radius: 0.375rem;
+      border-bottom-right-radius: 0.375rem;
     }
 
-    .product-details {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+    .card {
+      border: 1px solid #e9ecef;
+      transition: all 0.15s ease-in-out;
     }
 
-    .price {
-      font-weight: bold;
-      color: #2c5aa0;
-      font-size: 1.1rem;
+    .card:hover {
+      box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     }
 
-    .category, .stock {
-      font-size: 0.9rem;
-      color: #666;
+    .table-hover tbody tr:hover {
+      background-color: rgba(0, 123, 255, 0.05);
     }
 
-    .product-actions {
-      display: flex;
-      gap: 0.5rem;
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+    }
+
+    .alert {
+      border-radius: 0.5rem;
     }
 
     .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
+      transition: all 0.15s ease-in-out;
     }
 
-    .btn-primary {
-      background-color: #007bff;
-      color: white;
+    .btn:hover {
+      transform: translateY(-1px);
     }
 
-    .btn-outline {
-      background-color: transparent;
-      border: 1px solid #007bff;
-      color: #007bff;
+    .btn:active {
+      transform: translateY(0);
     }
 
-    .btn-danger {
-      background-color: #dc3545;
-      color: white;
+    /* Mobile optimizations */
+    @media (max-width: 991.98px) {
+      .card-body {
+        padding: 1rem;
+      }
+      
+      .btn-group .btn {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.8rem;
+      }
     }
 
-    .btn-sm {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.8rem;
+    /* Loading animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .empty-state {
-      text-align: center;
-      padding: 3rem;
-      color: #666;
+    .table tbody tr {
+      animation: fadeIn 0.3s ease-in-out;
     }
 
-    .empty-state p {
-      margin-bottom: 1rem;
-    }
-
-    .loading-spinner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .loading-text {
-      margin-top: 1rem;
-      color: #666;
-      font-size: 0.9rem;
-    }
-
-    .error-message {
-      text-align: center;
-      padding: 2rem;
-      background-color: #f8d7da;
-      border: 1px solid #f5c6cb;
-      border-radius: 8px;
-      margin: 1rem 0;
-      color: #721c24;
-    }
-
-    .error-message p {
-      margin-bottom: 1rem;
-      font-size: 1.1rem;
-    }
-
-    .error-message .btn {
-      padding: 0.75rem 1.5rem;
-      background-color: #dc3545;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    .error-message .btn:hover {
-      background-color: #c82333;
+    .card {
+      animation: fadeIn 0.3s ease-in-out;
     }
   `]
 })
@@ -242,25 +343,37 @@ export class ProductListComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private route: ActivatedRoute,
-    private http: HttpClient
+    private productService: ProductService
   ) { }
 
   ngOnInit(): void {
     this.loadProducts();
+    this.subscribeToProductService();
+  }
+
+  private subscribeToProductService(): void {
+    // Suscribirse a los observables del ProductService
+    this.productService.products$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((products: Product[]) => {
+        this.products = products;
+      });
+
+    this.productService.loading$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((loading: boolean) => {
+        this.isLoading = loading;
+      });
   }
 
   loadProducts(): void {
-    this.isLoading = true;
-    this.http.get<Product[]>(`${environment.apiUrl}/products`).subscribe({
-      next: (products) => {
-        this.products = products;
-        this.isLoading = false;
+    this.productService.getAll().subscribe({
+      next: (products: Product[]) => {
         console.log('✅ Productos cargados:', products);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('❌ Error cargando productos:', error);
         this.errorMessage = 'Error al cargar los productos';
-        this.isLoading = false;
       }
     });
   }
@@ -275,7 +388,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   viewProduct(id: number): void {
-    this.router.navigate(['/products/detail', id]);
+    this.router.navigate(['/products', id]);
   }
 
   editProduct(id: number): void {
@@ -284,12 +397,12 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   deleteProduct(id: number): void {
     if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-      this.http.delete(`${environment.apiUrl}/products/${id}`).subscribe({
+      this.productService.delete(id).subscribe({
         next: () => {
           console.log('✅ Producto eliminado exitosamente');
-          this.loadProducts(); // Recargar la lista
+          // El ProductService ya actualiza automáticamente la lista
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('❌ Error eliminando producto:', error);
           this.errorMessage = 'Error al eliminar el producto';
         }
@@ -298,7 +411,11 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   refreshProducts(): void {
-    this.loadProducts();
+    this.productService.getAll({}, true).subscribe(); // Force reload
+  }
+
+  trackByProductId(index: number, product: Product): number {
+    return product.id;
   }
 
   get hasError(): boolean {
