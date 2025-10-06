@@ -89,7 +89,7 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
           }
         }
       }
