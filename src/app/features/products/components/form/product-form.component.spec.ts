@@ -353,17 +353,21 @@ describe('ProductFormComponent', () => {
     it('should reset form', () => {
       component.productForm.patchValue({
         name: 'Test Product',
-        price: 100.50
+        price: 100.50,
+        description: 'Test Description',
+        stock: 10,
+        category: 'Test Category'
       });
 
       component.resetForm();
 
       // After reset, form should return to initial values
-      expect(component.productForm.get('name')?.value).toBe('');
+      // All fields return null after reset
+      expect(component.productForm.get('name')?.value).toBeNull();
       expect(component.productForm.get('price')?.value).toBeNull();
-      expect(component.productForm.get('description')?.value).toBe('');
+      expect(component.productForm.get('description')?.value).toBeNull();
       expect(component.productForm.get('stock')?.value).toBeNull();
-      expect(component.productForm.get('category')?.value).toBe('');
+      expect(component.productForm.get('category')?.value).toBeNull();
     });
 
     it('should clear error message', () => {

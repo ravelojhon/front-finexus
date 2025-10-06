@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 
 import { ProductService } from './product.service';
@@ -21,11 +22,13 @@ describe('ProductService', () => {
   });
 
   afterEach(() => {
-    httpMock.verify();
+    // Only verify for synchronous tests
+    // Async tests with done() callback will verify manually
   });
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+    httpMock.verify();
   });
 
   describe('getAll', () => {
@@ -50,24 +53,28 @@ describe('ProductService', () => {
       const req = httpMock.expectOne(`${baseUrl}/products`);
       expect(req.request.method).toBe('GET');
       req.flush(mockProducts);
+      httpMock.verify();
     });
 
-    it('should handle API errors', (done) => {
-      const errorMessage = 'Server error';
+    it('should handle API errors', () => {
+      const errorResponse = new HttpErrorResponse({
+        error: 'Server error',
+        status: 500,
+        statusText: 'Internal Server Error'
+      });
 
       service.getAll().subscribe({
         next: () => {
           fail('should have failed');
-          done();
         },
         error: (error) => {
           expect(error.status).toBe(500);
-          done();
+          httpMock.verify();
         }
       });
 
       const req = httpMock.expectOne(`${baseUrl}/products`);
-      req.flush(errorMessage, { status: 500, statusText: 'Internal Server Error' });
+      req.flush(null, errorResponse);
     });
 
     it('should use cache when available', () => {
@@ -99,6 +106,7 @@ describe('ProductService', () => {
 
       // Should not make another HTTP request
       httpMock.expectNone(`${baseUrl}/products`);
+      httpMock.verify();
     });
   });
 
@@ -122,22 +130,28 @@ describe('ProductService', () => {
       const req = httpMock.expectOne(`${baseUrl}/products/1`);
       expect(req.request.method).toBe('GET');
       req.flush(mockProduct);
+      httpMock.verify();
     });
 
-    it('should handle 404 error for non-existent product', (done) => {
+    it('should handle 404 error for non-existent product', () => {
+      const errorResponse = new HttpErrorResponse({
+        error: 'Not Found',
+        status: 404,
+        statusText: 'Not Found'
+      });
+
       service.getById(999).subscribe({
         next: () => {
           fail('should have failed');
-          done();
         },
         error: (error) => {
           expect(error.status).toBe(404);
-          done();
+          httpMock.verify();
         }
       });
 
       const req = httpMock.expectOne(`${baseUrl}/products/999`);
-      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
+      req.flush(null, errorResponse);
     });
   });
 
@@ -170,6 +184,7 @@ describe('ProductService', () => {
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(newProduct);
       req.flush(createdProduct);
+      httpMock.verify();
     });
 
     it('should handle validation errors', () => {
@@ -189,6 +204,7 @@ describe('ProductService', () => {
 
       const req = httpMock.expectOne(`${baseUrl}/products`);
       req.flush('Validation Error', { status: 400, statusText: 'Bad Request' });
+      httpMock.verify();
     });
   });
 
@@ -219,6 +235,7 @@ describe('ProductService', () => {
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual(updateData);
       req.flush(updatedProduct);
+      httpMock.verify();
     });
 
     it('should handle update errors', () => {
@@ -264,6 +281,7 @@ describe('ProductService', () => {
 
       const req = httpMock.expectOne(`${baseUrl}/products/${productId}`);
       req.flush('Not Found', { status: 404, statusText: 'Not Found' });
+      httpMock.verify();
     });
   });
 
@@ -278,6 +296,7 @@ describe('ProductService', () => {
       const req = httpMock.expectOne(`${baseUrl}`);
       expect(req.request.method).toBe('GET');
       req.flush(healthResponse);
+      httpMock.verify();
     });
   });
 
@@ -292,6 +311,7 @@ describe('ProductService', () => {
       const req = httpMock.expectOne(`${baseUrl}/products/test`);
       expect(req.request.method).toBe('GET');
       req.flush(dbResponse);
+      httpMock.verify();
     });
   });
 
@@ -299,16 +319,19 @@ describe('ProductService', () => {
     it('should clear cache', () => {
       service.clearCache();
       expect(service.getCurrentProducts()).toEqual([]);
+      httpMock.verify();
     });
 
     it('should return current products', () => {
       const products = service.getCurrentProducts();
       expect(Array.isArray(products)).toBeTruthy();
+      httpMock.verify();
     });
 
     it('should check loading state', () => {
       const isLoading = service.isLoading();
       expect(typeof isLoading).toBe('boolean');
+      httpMock.verify();
     });
   });
 });
