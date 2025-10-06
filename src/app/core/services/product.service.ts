@@ -287,62 +287,21 @@ export class ProductService {
   }
 
   /**
-   * Manejar errores de la API
+   * Manejar errores de la API (simplificado - el ErrorInterceptor maneja la UI)
    * @param error Error HTTP
    * @returns Observable<never>
    */
   private handleError(error: HttpErrorResponse): Observable<never> {
     this.setLoading(false);
-
-    let errorMessage = 'Ha ocurrido un error inesperado';
-    let errorDetails: ApiError | null = null;
-
-    if (error.error instanceof ErrorEvent) {
-      // Error del lado del cliente
-      errorMessage = `Error: ${error.error.message}`;
-      this.log('Error del cliente', { message: error.error.message });
-    } else {
-      // Error del lado del servidor
-      switch (error.status) {
-        case 400:
-          errorMessage = 'Datos de entrada inválidos';
-          errorDetails = error.error;
-          break;
-        case 404:
-          errorMessage = 'Producto no encontrado';
-          break;
-        case 409:
-          errorMessage = 'Conflicto: El producto ya existe';
-          break;
-        case 422:
-          errorMessage = 'Error de validación';
-          errorDetails = error.error;
-          break;
-        case 500:
-          errorMessage = 'Error interno del servidor';
-          break;
-        case 0:
-          errorMessage = 'No se pudo conectar con el servidor';
-          break;
-        default:
-          errorMessage = `Error ${error.status}: ${error.message}`;
-      }
-      this.log('Error del servidor', { 
-        status: error.status, 
-        message: error.message,
-        url: error.url 
-      });
-    }
-
-    const errorResponse = {
-      message: errorMessage,
-      details: errorDetails,
-      status: error.status,
-      originalError: error
-    };
-
-    this.log('Error manejado', errorResponse);
-    return throwError(() => errorResponse);
+    
+    // Solo log del error, el ErrorInterceptor se encarga de mostrar el toast
+    this.log('Error en ProductService', { 
+      status: error.status, 
+      message: error.message,
+      url: error.url 
+    });
+    
+    return throwError(() => error);
   }
 
   /**
