@@ -1,40 +1,45 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { Routes } from '@angular/router';
+import { productGuard, productFormGuard } from '../../core/guards/product.guard';
+import { productsResolver, productResolver } from '../../core/resolvers/product.resolver';
 
-import { ProductListComponent } from './components/list/product-list.component';
-import { ProductFormComponent } from './components/form/product-form.component';
-import { ProductDetailComponent } from './components/detail/product-detail.component';
-
-const routes: Routes = [
+export const productsRoutes: Routes = [
   {
     path: '',
-    component: ProductListComponent,
-    title: 'Lista de Productos'
+    loadComponent: () => import('./components/list/product-list.component').then(m => m.ProductListComponent),
+    title: 'Lista de Productos',
+    canActivate: [productGuard],
+    resolve: { products: productsResolver },
+    data: { preload: true, priority: 'high' }
   },
   {
     path: 'new',
-    component: ProductFormComponent,
-    title: 'Nuevo Producto'
+    loadComponent: () => import('./components/form/product-form.component').then(m => m.ProductFormComponent),
+    title: 'Nuevo Producto',
+    canActivate: [productGuard],
+    data: { preload: false, priority: 'medium' }
   },
   {
     path: 'edit/:id',
-    component: ProductFormComponent,
-    title: 'Editar Producto'
+    loadComponent: () => import('./components/form/product-form.component').then(m => m.ProductFormComponent),
+    title: 'Editar Producto',
+    canActivate: [productFormGuard],
+    resolve: { product: productResolver },
+    data: { preload: false, priority: 'medium' }
   },
   {
     path: 'detail/:id',
-    component: ProductDetailComponent,
-    title: 'Detalle del Producto'
+    loadComponent: () => import('./components/detail/product-detail.component').then(m => m.ProductDetailComponent),
+    title: 'Detalle del Producto',
+    canActivate: [productGuard],
+    resolve: { product: productResolver },
+    data: { preload: true, priority: 'high' }
   },
   {
     path: ':id',
-    component: ProductDetailComponent,
-    title: 'Detalle del Producto'
+    loadComponent: () => import('./components/detail/product-detail.component').then(m => m.ProductDetailComponent),
+    title: 'Detalle del Producto',
+    canActivate: [productGuard],
+    resolve: { product: productResolver },
+    data: { preload: true, priority: 'high' }
   }
 ];
-
-@NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
-})
-export class ProductsRoutingModule { }

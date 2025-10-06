@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { CommonModule, CurrencyPipe } from '@angular/common';
 
 export interface Product {
   id: number;
@@ -13,6 +14,8 @@ export interface Product {
 
 @Component({
   selector: 'app-product-list',
+  standalone: true,
+  imports: [CommonModule],
   template: `
     <div class="product-list-container">
       <div class="header">
@@ -22,10 +25,10 @@ export interface Product {
         </button>
       </div>
 
-      <app-loading-spinner 
-        [isLoading]="isLoading" 
-        message="Cargando productos...">
-      </app-loading-spinner>
+      <div class="loading-spinner" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p class="loading-text">Cargando productos...</p>
+      </div>
 
       <div class="products-grid" *ngIf="!isLoading">
         <div class="product-card" *ngFor="let product of products">
@@ -158,35 +161,53 @@ export interface Product {
     .empty-state p {
       margin-bottom: 1rem;
     }
+
+    .loading-spinner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 1rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
   `]
 })
 export class ProductListComponent implements OnInit {
   products: Product[] = [];
   isLoading = false;
 
-  constructor(private router: Router) { }
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute
+  ) { }
 
   ngOnInit(): void {
-    this.loadProducts();
-  }
-
-  loadProducts(): void {
-    this.isLoading = true;
-    // TODO: Implementar servicio para cargar productos
-    setTimeout(() => {
-      this.products = [
-        {
-          id: 1,
-          name: 'Producto de Ejemplo',
-          description: 'Descripción del producto de ejemplo',
-          price: 29.99,
-          category: 'Categoría A',
-          stock: 10,
-          createdAt: new Date()
-        }
-      ];
-      this.isLoading = false;
-    }, 1000);
+    // Los datos vienen del resolver, no necesitamos cargar manualmente
+    this.route.data.subscribe(data => {
+      if (data['products']) {
+        this.products = data['products'];
+        this.isLoading = false;
+      }
+    });
   }
 
   navigateToNew(): void {

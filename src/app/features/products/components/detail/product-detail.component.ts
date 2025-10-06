@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 
 export interface Product {
   id: number;
@@ -14,6 +15,8 @@ export interface Product {
 
 @Component({
   selector: 'app-product-detail',
+  standalone: true,
+  imports: [CommonModule, CurrencyPipe, DatePipe],
   template: `
     <div class="product-detail-container">
       <div class="header">
@@ -28,10 +31,10 @@ export interface Product {
         </div>
       </div>
 
-      <app-loading-spinner 
-        [isLoading]="isLoading" 
-        message="Cargando producto...">
-      </app-loading-spinner>
+      <div class="loading-spinner" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p class="loading-text">Cargando producto...</p>
+      </div>
 
       <div class="product-detail" *ngIf="!isLoading && product">
         <div class="product-header">
@@ -56,11 +59,11 @@ export interface Product {
                 </div>
                 <div class="info-item">
                   <label>Creado:</label>
-                  <span>{{ product.createdAt | dateFormat:'short' }}</span>
+                  <span>{{ product.createdAt | date:'short' }}</span>
                 </div>
                 <div class="info-item">
                   <label>Actualizado:</label>
-                  <span>{{ product.updatedAt | dateFormat:'short' }}</span>
+                  <span>{{ product.updatedAt | date:'short' }}</span>
                 </div>
               </div>
             </div>
@@ -241,6 +244,34 @@ export interface Product {
     .btn:hover {
       opacity: 0.9;
     }
+
+    .loading-spinner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 1rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
   `]
 })
 export class ProductDetailComponent implements OnInit {
@@ -253,28 +284,13 @@ export class ProductDetailComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.loadProduct(parseInt(id));
-    }
-  }
-
-  loadProduct(id: number): void {
-    this.isLoading = true;
-    // TODO: Implementar carga de producto por ID
-    setTimeout(() => {
-      this.product = {
-        id: id,
-        name: 'Producto de Ejemplo',
-        description: 'Descripción detallada del producto de ejemplo que muestra toda la información disponible.',
-        price: 29.99,
-        category: 'Categoría A',
-        stock: 5,
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-20')
-      };
-      this.isLoading = false;
-    }, 1000);
+    // Los datos vienen del resolver, no necesitamos cargar manualmente
+    this.route.data.subscribe(data => {
+      if (data['product']) {
+        this.product = data['product'];
+        this.isLoading = false;
+      }
+    });
   }
 
   editProduct(): void {
