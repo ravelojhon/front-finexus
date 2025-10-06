@@ -17,6 +17,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
   products: Product[] = [];
   isLoading = false;
   errorMessage = '';
+  deletingProductId: number | null = null; // Para mostrar estado de eliminación
   
   private destroy$ = new Subject<void>();
 
@@ -76,15 +77,39 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   deleteProduct(id: number): void {
-    if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+    // Buscar el producto para mostrar información en la confirmación
+    const product = this.products.find(p => p.id === id);
+    if (!product) {
+      console.error('❌ Producto no encontrado para eliminar');
+      return;
+    }
+
+    // Diálogo de confirmación mejorado con información del producto
+    const priceFormatted = new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(product.price);
+    
+    const confirmMessage = `¿Estás seguro de que quieres eliminar el producto "${product.name}"?\n\n` +
+                          `ID: #${product.id}\n` +
+                          `Precio: ${priceFormatted}\n` +
+                          `Stock: ${product.stock} unidades\n\n` +
+                          `Esta acción no se puede deshacer.`;
+
+    if (confirm(confirmMessage)) {
+      this.deletingProductId = id; // Marcar como eliminando
+      this.clearError(); // Limpiar errores previos
+
       this.productService.delete(id).subscribe({
         next: () => {
-          console.log('✅ Producto eliminado exitosamente');
+          console.log('✅ Producto eliminado exitosamente:', product.name);
+          this.deletingProductId = null; // Limpiar estado de eliminación
           // El ProductService ya actualiza automáticamente la lista
         },
         error: (error: any) => {
           console.error('❌ Error eliminando producto:', error);
-          this.errorMessage = 'Error al eliminar el producto';
+          this.deletingProductId = null; // Limpiar estado de eliminación
+          this.errorMessage = this.getDeleteErrorMessage(error, product.name);
         }
       });
     }
@@ -100,5 +125,29 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
   get hasError(): boolean {
     return !!this.errorMessage;
+  }
+
+  isDeletingProduct(id: number): boolean {
+    return this.deletingProductId === id;
+  }
+
+  private clearError(): void {
+    this.errorMessage = '';
+  }
+
+  private getDeleteErrorMessage(error: any, productName: string): string {
+    if (error?.message) {
+      return `Error al eliminar "${productName}": ${error.message}`;
+    }
+    if (error?.status === 404) {
+      return `El producto "${productName}" no existe o ya fue eliminado`;
+    }
+    if (error?.status === 403) {
+      return `No tienes permisos para eliminar el producto "${productName}"`;
+    }
+    if (error?.status >= 500) {
+      return `Error del servidor al eliminar "${productName}". Intenta nuevamente`;
+    }
+    return `Error inesperado al eliminar "${productName}". Intenta nuevamente`;
   }
 }

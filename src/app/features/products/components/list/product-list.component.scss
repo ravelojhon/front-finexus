@@ -237,3 +237,44 @@
   border-color: #dc3545;
   color: white;
 }
+
+// Delete button states
+.btn-outline-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-outline-danger.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.btn-outline-danger.btn-danger:disabled {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+  opacity: 0.8;
+}
+
+// Spinner animation for delete button
+.fa-spinner.fa-spin {
+  animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Button group improvements for delete state
+.btn-group .btn:disabled {
+  pointer-events: none;
+}
+
+// Mobile delete button improvements
+@media (max-width: 991.98px) {
+  .btn-outline-danger .ms-1 {
+    font-size: 0.75rem;
+  }
+}

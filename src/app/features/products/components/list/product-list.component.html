@@ -131,8 +131,14 @@
                       </button>
                       <button class="btn btn-outline-danger btn-sm" 
                               (click)="deleteProduct(product.id)"
-                              title="Eliminar">
-                        <i class="fas fa-trash"></i>
+                              [disabled]="isDeletingProduct(product.id)"
+                              [class.btn-danger]="isDeletingProduct(product.id)"
+                              title="{{ isDeletingProduct(product.id) ? 'Eliminando...' : 'Eliminar' }}">
+                        <i class="fas" 
+                           [class.fa-spinner]="isDeletingProduct(product.id)"
+                           [class.fa-spin]="isDeletingProduct(product.id)"
+                           [class.fa-trash]="!isDeletingProduct(product.id)"></i>
+                        <span *ngIf="isDeletingProduct(product.id)" class="ms-1">Eliminando...</span>
                       </button>
                     </div>
                   </td>
@@ -197,8 +203,14 @@
                       </button>
                       <button class="btn btn-outline-danger btn-sm" 
                               (click)="deleteProduct(product.id)"
-                              title="Eliminar">
-                        <i class="fas fa-trash"></i>
+                              [disabled]="isDeletingProduct(product.id)"
+                              [class.btn-danger]="isDeletingProduct(product.id)"
+                              title="{{ isDeletingProduct(product.id) ? 'Eliminando...' : 'Eliminar' }}">
+                        <i class="fas" 
+                           [class.fa-spinner]="isDeletingProduct(product.id)"
+                           [class.fa-spin]="isDeletingProduct(product.id)"
+                           [class.fa-trash]="!isDeletingProduct(product.id)"></i>
+                        <span *ngIf="isDeletingProduct(product.id)" class="ms-1">Eliminando...</span>
                       </button>
                     </div>
                   </div>
