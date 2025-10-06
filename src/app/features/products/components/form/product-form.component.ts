@@ -6,17 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
 
 import { environment } from '../../../../../environments/environment';
-
-export interface Product {
-  id: number;
-  name: string;
-  price: number;
-  stock: number;
-  category: string | null;
-  createdAt: string;
-  updatedAt: string;
-  description?: string;
-}
+import { Product } from '../../../../core/models/product.interface';
 
 @Component({
   selector: 'app-product-form',
@@ -235,6 +225,7 @@ export class ProductFormComponent implements OnInit, OnDestroy {
   ) {
     this.productForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
+      description: [''],
       price: [0, [Validators.required, Validators.min(0.01)]],
       stock: [0, [Validators.required, Validators.min(0)]],
       category: ['']
@@ -261,6 +252,7 @@ export class ProductFormComponent implements OnInit, OnDestroy {
       next: (product) => {
         this.productForm.patchValue({
           name: product.name,
+          description: product.description || '',
           price: product.price,
           stock: product.stock,
           category: product.category || ''
