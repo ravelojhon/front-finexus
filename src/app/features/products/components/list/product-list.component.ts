@@ -1,23 +1,32 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule, CurrencyPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 
 import { ProductService } from '../../../../core/services/product.service';
 import { Product, LoadingState } from '../../../../core/models/product.interface';
+import { ProductFormComponent } from '../form/product-form.component';
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe],
+  imports: [CommonModule, CurrencyPipe, FormsModule, ProductFormComponent],
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.scss']
 })
 export class ProductListComponent implements OnInit, OnDestroy {
   products: Product[] = [];
+  filteredProducts: Product[] = [];
   isLoading = false;
   errorMessage = '';
-  deletingProductId: number | null = null; // Para mostrar estado de eliminación
+  deletingProductId: number | null = null;
+  
+  // Filtros
+  searchTerm = '';
+  selectedCategory = '';
+  stockFilter = '';
+  categories: string[] = [];
   
   private destroy$ = new Subject<void>();
 
@@ -38,6 +47,8 @@ export class ProductListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((products: Product[]) => {
         this.products = products;
+        this.extractCategories();
+        this.applyFilters();
       });
 
     this.productService.loading$
@@ -149,5 +160,84 @@ export class ProductListComponent implements OnInit, OnDestroy {
       return `Error del servidor al eliminar "${productName}". Intenta nuevamente`;
     }
     return `Error inesperado al eliminar "${productName}". Intenta nuevamente`;
+  }
+
+  // Métodos de filtrado
+  onSearch(): void {
+    this.applyFilters();
+  }
+
+  onCategoryFilter(): void {
+    this.applyFilters();
+  }
+
+  onStockFilter(): void {
+    this.applyFilters();
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.selectedCategory = '';
+    this.stockFilter = '';
+    this.applyFilters();
+  }
+
+  private extractCategories(): void {
+    const uniqueCategories = [...new Set(this.products
+      .map(p => p.category)
+      .filter((category): category is string => category != null && category.trim() !== '')
+    )];
+    this.categories = uniqueCategories.sort();
+  }
+
+  private applyFilters(): void {
+    let filtered = [...this.products];
+
+    // Filtro por búsqueda
+    if (this.searchTerm.trim()) {
+      const searchLower = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchLower) ||
+        (product.category && product.category.toLowerCase().includes(searchLower)) ||
+        (product.description && product.description.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Filtro por categoría
+    if (this.selectedCategory) {
+      filtered = filtered.filter(product => product.category === this.selectedCategory);
+    }
+
+    // Filtro por stock
+    if (this.stockFilter) {
+      switch (this.stockFilter) {
+        case 'in-stock':
+          filtered = filtered.filter(product => product.stock > 0);
+          break;
+        case 'low-stock':
+          filtered = filtered.filter(product => product.stock > 0 && product.stock <= 10);
+          break;
+        case 'out-of-stock':
+          filtered = filtered.filter(product => product.stock === 0);
+          break;
+      }
+    }
+
+    this.filteredProducts = filtered;
+  }
+
+  // Métodos de navegación de tabs
+  switchToAddTab(): void {
+    const addTab = document.getElementById('add-tab') as HTMLButtonElement;
+    if (addTab) {
+      addTab.click();
+    }
+  }
+
+  // Métodos de utilidad para badges
+  getStockBadgeClass(stock: number): string {
+    if (stock > 10) return 'bg-success';
+    if (stock > 0) return 'bg-warning';
+    return 'bg-danger';
   }
 }

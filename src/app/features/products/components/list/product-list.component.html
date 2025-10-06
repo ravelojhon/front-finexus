@@ -1,239 +1,177 @@
 <div class="container-fluid py-4">
-  <!-- Header -->
-  <div class="row mb-4">
+  <div class="row">
     <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center">
-        <h2 class="mb-0">
-          <i class="fas fa-boxes me-2"></i>
-          Lista de Productos
-        </h2>
-        <button class="btn btn-primary" (click)="navigateToNew()">
-          <i class="fas fa-plus me-2"></i>
-          Nuevo Producto
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading State -->
-  <div class="row" *ngIf="isLoading">
-    <div class="col-12">
-      <div class="d-flex justify-content-center align-items-center py-5">
-        <div class="text-center">
-          <div class="spinner-border text-primary mb-3" role="status">
-            <span class="visually-hidden">Cargando...</span>
-          </div>
-          <p class="text-muted">Cargando productos...</p>
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-boxes text-primary me-3" style="font-size: 2rem;"></i>
+          <h1 class="mb-0 text-dark fw-bold">Gestión de Productos</h1>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Error State -->
-  <div class="row" *ngIf="hasError">
-    <div class="col-12">
-      <div class="alert alert-danger d-flex align-items-center" role="alert">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        <div class="flex-grow-1">
-          <strong>Error:</strong> {{ errorMessage || 'Error al cargar los productos' }}
-        </div>
-        <button class="btn btn-outline-danger btn-sm" (click)="refreshProducts()">
-          <i class="fas fa-redo me-1"></i>
-          Reintentar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Products Table -->
-  <div class="row" *ngIf="!isLoading && !hasError">
-    <div class="col-12">
-      <div class="card shadow-sm">
-        <div class="card-header bg-white">
-          <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
+      <!-- Tabs Navigation -->
+      <div class="mb-4">
+        <ul class="nav nav-tabs custom-tabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button" role="tab" aria-controls="list" aria-selected="true">
               <i class="fas fa-list me-2"></i>
-              Productos ({{ products.length }})
-            </h5>
-            <div class="btn-group" role="group">
-              <button class="btn btn-outline-secondary btn-sm" (click)="refreshProducts()">
-                <i class="fas fa-sync-alt me-1"></i>
-                Actualizar
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="card-body p-0">
-          <!-- Desktop Table -->
-          <div class="table-responsive d-none d-lg-block">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th scope="col" class="border-0">ID</th>
-                  <th scope="col" class="border-0">Nombre</th>
-                  <th scope="col" class="border-0">Categoría</th>
-                  <th scope="col" class="border-0 text-end">Precio</th>
-                  <th scope="col" class="border-0 text-center">Stock</th>
-                  <th scope="col" class="border-0 text-center">Estado</th>
-                  <th scope="col" class="border-0 text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let product of products; trackBy: trackByProductId">
-                  <td class="align-middle">
-                    <span class="badge bg-secondary">#{{ product.id }}</span>
-                  </td>
-                  <td class="align-middle">
-                    <div>
-                      <strong>{{ product.name }}</strong>
-                      <small class="text-muted d-block" *ngIf="product.description">
-                        {{ product.description | slice:0:50 }}{{ product.description.length > 50 ? '...' : '' }}
-                      </small>
-                    </div>
-                  </td>
-                  <td class="align-middle">
-                    <span class="badge bg-info" *ngIf="product.category; else noCategory">
-                      {{ product.category }}
-                    </span>
-                    <ng-template #noCategory>
-                      <span class="text-muted">Sin categoría</span>
-                    </ng-template>
-                  </td>
-                  <td class="align-middle text-end">
-                    <strong class="text-success">{{ product.price | currency:'EUR':'symbol':'1.2-2' }}</strong>
-                  </td>
-                  <td class="align-middle text-center">
-                    <span class="badge" 
-                          [class.bg-success]="product.stock > 10"
-                          [class.bg-warning]="product.stock > 0 && product.stock <= 10"
-                          [class.bg-danger]="product.stock === 0">
-                      {{ product.stock }}
-                    </span>
-                  </td>
-                  <td class="align-middle text-center">
-                    <span class="badge" 
-                          [class.bg-success]="product.stock > 0"
-                          [class.bg-danger]="product.stock === 0">
-                      {{ product.stock > 0 ? 'Disponible' : 'Agotado' }}
-                    </span>
-                  </td>
-                  <td class="align-middle text-center">
-                    <div class="btn-group" role="group">
-                      <button class="btn btn-outline-primary btn-sm" 
-                              (click)="viewProduct(product.id)"
-                              title="Ver detalles">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                      <button class="btn btn-outline-warning btn-sm" 
-                              (click)="editProduct(product.id)"
-                              title="Editar">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn btn-outline-danger btn-sm" 
-                              (click)="deleteProduct(product.id)"
-                              [disabled]="isDeletingProduct(product.id)"
-                              [class.btn-danger]="isDeletingProduct(product.id)"
-                              title="{{ isDeletingProduct(product.id) ? 'Eliminando...' : 'Eliminar' }}">
-                        <i class="fas" 
-                           [class.fa-spinner]="isDeletingProduct(product.id)"
-                           [class.fa-spin]="isDeletingProduct(product.id)"
-                           [class.fa-trash]="!isDeletingProduct(product.id)"></i>
-                        <span *ngIf="isDeletingProduct(product.id)" class="ms-1">Eliminando...</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              Listado de Productos
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab" aria-controls="add" aria-selected="false">
+              <i class="fas fa-plus me-2"></i>
+              Nuevo Producto
+            </button>
+          </li>
+        </ul>
+      </div>
 
-          <!-- Mobile Cards -->
-          <div class="d-lg-none">
-            <div class="p-3" *ngFor="let product of products; trackBy: trackByProductId">
-              <div class="card mb-3">
-                <div class="card-body">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">{{ product.name }}</h6>
-                    <span class="badge bg-secondary">#{{ product.id }}</span>
-                  </div>
-                  
-                  <p class="card-text text-muted small mb-2" *ngIf="product.description">
-                    {{ product.description | slice:0:80 }}{{ product.description.length > 80 ? '...' : '' }}
-                  </p>
-                  
-                  <div class="row mb-3">
-                    <div class="col-6">
-                      <small class="text-muted">Categoría:</small>
-                      <div>
-                        <span class="badge bg-info" *ngIf="product.category; else noCategoryMobile">
-                          {{ product.category }}
-                        </span>
-                        <ng-template #noCategoryMobile>
-                          <span class="text-muted small">Sin categoría</span>
-                        </ng-template>
-                      </div>
-                    </div>
-                    <div class="col-6">
-                      <small class="text-muted">Stock:</small>
-                      <div>
-                        <span class="badge" 
-                              [class.bg-success]="product.stock > 10"
-                              [class.bg-warning]="product.stock > 0 && product.stock <= 10"
-                              [class.bg-danger]="product.stock === 0">
-                          {{ product.stock }} {{ product.stock > 0 ? 'Disponible' : 'Agotado' }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="d-flex justify-content-between align-items-center">
-                    <strong class="text-success h5 mb-0">
-                      {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
-                    </strong>
-                    <div class="btn-group" role="group">
-                      <button class="btn btn-outline-primary btn-sm" 
-                              (click)="viewProduct(product.id)"
-                              title="Ver">
-                        <i class="fas fa-eye"></i>
-                      </button>
-                      <button class="btn btn-outline-warning btn-sm" 
-                              (click)="editProduct(product.id)"
-                              title="Editar">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn btn-outline-danger btn-sm" 
-                              (click)="deleteProduct(product.id)"
-                              [disabled]="isDeletingProduct(product.id)"
-                              [class.btn-danger]="isDeletingProduct(product.id)"
-                              title="{{ isDeletingProduct(product.id) ? 'Eliminando...' : 'Eliminar' }}">
-                        <i class="fas" 
-                           [class.fa-spinner]="isDeletingProduct(product.id)"
-                           [class.fa-spin]="isDeletingProduct(product.id)"
-                           [class.fa-trash]="!isDeletingProduct(product.id)"></i>
-                        <span *ngIf="isDeletingProduct(product.id)" class="ms-1">Eliminando...</span>
-                      </button>
-                    </div>
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <!-- List Tab -->
+        <div class="tab-pane fade show active" id="list" role="tabpanel" aria-labelledby="list-tab">
+          <div class="card shadow-sm border-0">
+            <!-- Card Header -->
+            <div class="card-header bg-white border-0 pb-0">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-boxes text-warning me-2"></i>
+                  <h4 class="mb-0 fw-bold text-dark">PRODUCTOS REGISTRADOS</h4>
+                </div>
+                <button class="btn btn-primary-custom" (click)="switchToAddTab()">
+                  <i class="fas fa-plus me-2"></i>
+                  Adicionar Producto
+                </button>
+              </div>
+
+              <!-- Search and Filters -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                  <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                      <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0" placeholder="Buscar por nombre, categoría..." [(ngModel)]="searchTerm" (input)="onSearch()">
                   </div>
                 </div>
+                <div class="col-md-3">
+                  <select class="form-select" [(ngModel)]="selectedCategory" (change)="onCategoryFilter()">
+                    <option value="">Todas las categorías</option>
+                    <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <select class="form-select" [(ngModel)]="stockFilter" (change)="onStockFilter()">
+                    <option value="">Todos los productos</option>
+                    <option value="in-stock">Solo con stock</option>
+                    <option value="low-stock">Stock bajo</option>
+                    <option value="out-of-stock">Sin stock</option>
+                  </select>
+                </div>
+                <div class="col-md-2">
+                  <button class="btn btn-outline-secondary w-100" (click)="clearFilters()">
+                    <i class="fas fa-filter me-1"></i>
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body p-0">
+              <!-- Loading State -->
+              <div *ngIf="isLoading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3 text-muted">Cargando productos...</p>
+              </div>
+
+              <!-- Error State -->
+              <div *ngIf="hasError" class="alert alert-danger mx-3" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                {{ errorMessage || 'Error al cargar los productos' }}
+              </div>
+
+              <!-- Products Table -->
+              <div *ngIf="!isLoading && !hasError" class="table-responsive">
+                <table class="table table-hover mb-0">
+                  <thead class="table-header-custom">
+                    <tr>
+                      <th class="text-center">Acciones</th>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Precio</th>
+                      <th>Stock</th>
+                      <th>Categoría</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let product of filteredProducts; trackBy: trackByProductId" class="table-row-custom">
+                      <td class="text-center">
+                        <div class="btn-group" role="group">
+                          <button class="btn btn-sm btn-action btn-edit" (click)="viewProduct(product.id)" title="Ver detalles">
+                            <i class="fas fa-eye"></i>
+                          </button>
+                          <button class="btn btn-sm btn-action btn-edit" (click)="editProduct(product.id)" title="Editar">
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          <button class="btn btn-sm btn-action btn-delete" (click)="deleteProduct(product.id)" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                      <td class="fw-bold text-primary">{{ product.id }}</td>
+                      <td class="fw-medium">{{ product.name }}</td>
+                      <td class="fw-bold text-success">{{ product.price | currency:'USD':'symbol':'1.2-2' }}</td>
+                      <td>
+                        <span class="badge" [ngClass]="getStockBadgeClass(product.stock)">
+                          {{ product.stock }} unidades
+                        </span>
+                      </td>
+                      <td>
+                        <span *ngIf="product.category; else noCategory" class="badge bg-info-custom">
+                          {{ product.category }}
+                        </span>
+                        <ng-template #noCategory>
+                          <span class="text-muted">Sin categoría</span>
+                        </ng-template>
+                      </td>
+                      <td>
+                        <span class="badge status-badge" [ngClass]="product.stock > 0 ? 'status-active' : 'status-inactive'">
+                          {{ product.stock > 0 ? 'Activo' : 'Inactivo' }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Empty State -->
+              <div *ngIf="!isLoading && !hasError && filteredProducts.length === 0" class="text-center py-5">
+                <i class="fas fa-inbox text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3 mb-0">No hay productos registrados</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Empty State -->
-  <div class="row" *ngIf="!isLoading && !hasError && products.length === 0">
-    <div class="col-12">
-      <div class="text-center py-5">
-        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-        <h4 class="text-muted">No hay productos disponibles</h4>
-        <p class="text-muted mb-4">Comienza creando tu primer producto</p>
-        <button class="btn btn-primary" (click)="navigateToNew()">
-          <i class="fas fa-plus me-2"></i>
-          Crear primer producto
-        </button>
+        <!-- Add Tab -->
+        <div class="tab-pane fade" id="add" role="tabpanel" aria-labelledby="add-tab">
+          <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-0">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-plus-circle text-warning me-2"></i>
+                <h4 class="mb-0 fw-bold text-dark">NUEVO PRODUCTO</h4>
+              </div>
+            </div>
+            <div class="card-body">
+              <app-product-form></app-product-form>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
