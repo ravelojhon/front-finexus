@@ -1,0 +1,239 @@
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-10 col-xl-8">
+      <!-- Header -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+              <i class="fas fa-eye me-2"></i>
+              Detalle del Producto
+            </h2>
+            <div class="btn-group" role="group">
+              <button class="btn btn-outline-secondary" (click)="goBack()">
+                <i class="fas fa-arrow-left me-1"></i>
+                Volver
+              </button>
+              <button class="btn btn-outline-primary" (click)="editProduct()" *ngIf="product">
+                <i class="fas fa-edit me-1"></i>
+                Editar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="card shadow-sm" *ngIf="isLoading">
+        <div class="card-body text-center py-5">
+          <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-muted">Cargando información del producto...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="alert alert-danger" *ngIf="hasError" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <div class="flex-grow-1">
+            <strong>Error:</strong> {{ errorMessage }}
+          </div>
+          <button class="btn btn-outline-danger btn-sm" (click)="goBack()">
+            <i class="fas fa-arrow-left me-1"></i>
+            Volver a la lista
+          </button>
+        </div>
+      </div>
+
+      <!-- Product Not Found -->
+      <div class="card shadow-sm" *ngIf="!isLoading && !hasError && !product">
+        <div class="card-body text-center py-5">
+          <i class="fas fa-search fa-3x text-muted mb-3"></i>
+          <h4 class="text-muted">Producto no encontrado</h4>
+          <p class="text-muted mb-4">El producto que buscas no existe o ha sido eliminado.</p>
+          <button class="btn btn-primary" (click)="goBack()">
+            <i class="fas fa-arrow-left me-2"></i>
+            Volver a la lista
+          </button>
+        </div>
+      </div>
+
+      <!-- Product Detail -->
+      <div class="card shadow-sm" *ngIf="!isLoading && !hasError && product">
+        <!-- Product Header -->
+        <div class="card-header bg-gradient-primary text-white">
+          <div class="row align-items-center">
+            <div class="col-md-8">
+              <h1 class="card-title mb-2">
+                <i class="fas fa-tag me-2"></i>
+                {{ product.name }}
+              </h1>
+              <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-light text-dark fs-6" *ngIf="product.category">
+                  <i class="fas fa-folder me-1"></i>
+                  {{ product.category }}
+                </span>
+                <span class="badge" 
+                      [class.bg-success]="product.stock > 10"
+                      [class.bg-warning]="product.stock > 0 && product.stock <= 10"
+                      [class.bg-danger]="product.stock === 0">
+                  <i class="fas fa-boxes me-1"></i>
+                  {{ product.stock }} {{ product.stock === 1 ? 'unidad' : 'unidades' }}
+                </span>
+              </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+              <div class="h2 mb-0 text-success">
+                {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
+              </div>
+              <small class="text-light opacity-75">
+                Precio unitario
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Content -->
+        <div class="card-body p-4">
+          <!-- Description -->
+          <div class="mb-4" *ngIf="product.description">
+            <h5 class="text-primary mb-3">
+              <i class="fas fa-align-left me-2"></i>
+              Descripción
+            </h5>
+            <div class="bg-light p-3 rounded">
+              <p class="mb-0 text-muted">{{ product.description }}</p>
+            </div>
+          </div>
+
+          <!-- Product Information Grid -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h5 class="text-primary mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Información General
+              </h5>
+              <div class="list-group list-group-flush">
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="fw-medium">
+                    <i class="fas fa-hashtag me-2 text-muted"></i>
+                    ID del Producto
+                  </span>
+                  <span class="badge bg-secondary">#{{ product.id }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="fw-medium">
+                    <i class="fas fa-euro-sign me-2 text-muted"></i>
+                    Precio
+                  </span>
+                  <span class="fw-bold text-success">
+                    {{ product.price | currency:'EUR':'symbol':'1.2-2' }}
+                  </span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="fw-medium">
+                    <i class="fas fa-boxes me-2 text-muted"></i>
+                    Stock Disponible
+                  </span>
+                  <span class="fw-bold" 
+                        [class.text-success]="product.stock > 10"
+                        [class.text-warning]="product.stock > 0 && product.stock <= 10"
+                        [class.text-danger]="product.stock === 0">
+                    {{ product.stock }} {{ product.stock === 1 ? 'unidad' : 'unidades' }}
+                  </span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="fw-medium">
+                    <i class="fas fa-folder me-2 text-muted"></i>
+                    Categoría
+                  </span>
+                  <span class="badge bg-info" *ngIf="product.category; else noCategory">
+                    {{ product.category }}
+                  </span>
+                  <ng-template #noCategory>
+                    <span class="text-muted">Sin categoría</span>
+                  </ng-template>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <h5 class="text-primary mb-3">
+                <i class="fas fa-clock me-2"></i>
+                Fechas de Registro
+              </h5>
+              <div class="list-group list-group-flush">
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="fw-medium">
+                    <i class="fas fa-plus-circle me-2 text-muted"></i>
+                    Fecha de Creación
+                  </span>
+                  <span class="text-muted">
+                    {{ product.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="fw-medium">
+                    <i class="fas fa-edit me-2 text-muted"></i>
+                    Última Actualización
+                  </span>
+                  <span class="text-muted">
+                    {{ product.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="fw-medium">
+                    <i class="fas fa-calendar-alt me-2 text-muted"></i>
+                    Días desde creación
+                  </span>
+                  <span class="text-muted">
+                    {{ getDaysSinceCreation() }} {{ getDaysSinceCreation() === 1 ? 'día' : 'días' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stock Status Alert -->
+          <div class="alert" 
+               [class.alert-success]="product.stock > 10"
+               [class.alert-warning]="product.stock > 0 && product.stock <= 10"
+               [class.alert-danger]="product.stock === 0"
+               role="alert">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-{{ product.stock > 10 ? 'check-circle' : (product.stock > 0 ? 'exclamation-triangle' : 'times-circle') }} me-2"></i>
+              <div class="flex-grow-1">
+                <strong>
+                  {{ product.stock > 10 ? 'Stock Disponible' : (product.stock > 0 ? 'Stock Bajo' : 'Sin Stock') }}
+                </strong>
+                <div class="small">
+                  {{ product.stock > 10 ? 'El producto tiene suficiente stock disponible.' : 
+                     (product.stock > 0 ? 'El stock está por debajo del nivel recomendado.' : 
+                      'El producto no tiene stock disponible.') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex gap-3 justify-content-center mt-4">
+            <button class="btn btn-outline-secondary" (click)="goBack()">
+              <i class="fas fa-arrow-left me-1"></i>
+              Volver a la Lista
+            </button>
+            <button class="btn btn-warning" (click)="editProduct()">
+              <i class="fas fa-edit me-1"></i>
+              Editar Producto
+            </button>
+            <button class="btn btn-danger" (click)="deleteProduct()">
+              <i class="fas fa-trash me-1"></i>
+              Eliminar Producto
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

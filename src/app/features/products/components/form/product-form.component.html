@@ -1,0 +1,225 @@
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8 col-xl-6">
+      <!-- Header -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+              <i class="fas fa-{{ isEditMode ? 'edit' : 'plus' }} me-2"></i>
+              {{ isEditMode ? 'Editar Producto' : 'Nuevo Producto' }}
+            </h2>
+            <button class="btn btn-outline-secondary" (click)="goBack()">
+              <i class="fas fa-arrow-left me-1"></i>
+              Volver
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="card shadow-sm" *ngIf="isLoading">
+        <div class="card-body text-center py-5">
+          <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-muted">{{ isEditMode ? 'Cargando producto...' : 'Preparando formulario...' }}</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="alert alert-danger" *ngIf="hasError" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <div class="flex-grow-1">
+            <strong>Error:</strong> {{ errorMessage }}
+          </div>
+          <button class="btn btn-outline-danger btn-sm" (click)="clearError()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Success Message -->
+      <div class="alert alert-success" *ngIf="successMessage" role="alert">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-check-circle me-2"></i>
+          <div class="flex-grow-1">
+            <strong>Éxito:</strong> {{ successMessage }}
+          </div>
+          <button class="btn btn-outline-success btn-sm" (click)="clearSuccess()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="card shadow-sm" *ngIf="!isLoading">
+        <div class="card-body p-4">
+          <form [formGroup]="productForm" (ngSubmit)="onSubmit()" novalidate>
+            <!-- Nombre -->
+            <div class="mb-4">
+              <label for="name" class="form-label">
+                <i class="fas fa-tag me-1"></i>
+                Nombre del Producto <span class="text-danger">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="name" 
+                formControlName="name" 
+                class="form-control"
+                [class.is-invalid]="isFieldInvalid('name')"
+                [class.is-valid]="isFieldValid('name')"
+                placeholder="Ingresa el nombre del producto"
+                autocomplete="off">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+                <i class="fas fa-exclamation-circle me-1"></i>
+                {{ getFieldError('name') }}
+              </div>
+              <div class="valid-feedback" *ngIf="isFieldValid('name')">
+                <i class="fas fa-check-circle me-1"></i>
+                Nombre válido
+              </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-4">
+              <label for="description" class="form-label">
+                <i class="fas fa-align-left me-1"></i>
+                Descripción
+                <small class="text-muted">(Opcional)</small>
+              </label>
+              <textarea 
+                id="description" 
+                formControlName="description" 
+                class="form-control"
+                rows="4"
+                placeholder="Describe las características del producto"
+                [class.is-valid]="isFieldValid('description')">
+              </textarea>
+              <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Proporciona detalles adicionales sobre el producto
+              </div>
+            </div>
+
+            <!-- Precio y Stock -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label for="price" class="form-label">
+                  <i class="fas fa-euro-sign me-1"></i>
+                  Precio <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">€</span>
+                  <input 
+                    type="number" 
+                    id="price" 
+                    formControlName="price" 
+                    class="form-control"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    [class.is-invalid]="isFieldInvalid('price')"
+                    [class.is-valid]="isFieldValid('price')">
+                  <div class="invalid-feedback" *ngIf="isFieldInvalid('price')">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    {{ getFieldError('price') }}
+                  </div>
+                  <div class="valid-feedback" *ngIf="isFieldValid('price')">
+                    <i class="fas fa-check-circle me-1"></i>
+                    Precio válido
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label for="stock" class="form-label">
+                  <i class="fas fa-boxes me-1"></i>
+                  Stock <span class="text-danger">*</span>
+                </label>
+                <input 
+                  type="number" 
+                  id="stock" 
+                  formControlName="stock" 
+                  class="form-control"
+                  min="0"
+                  placeholder="0"
+                  [class.is-invalid]="isFieldInvalid('stock')"
+                  [class.is-valid]="isFieldValid('stock')">
+                <div class="invalid-feedback" *ngIf="isFieldInvalid('stock')">
+                  <i class="fas fa-exclamation-circle me-1"></i>
+                  {{ getFieldError('stock') }}
+                </div>
+                <div class="valid-feedback" *ngIf="isFieldValid('stock')">
+                  <i class="fas fa-check-circle me-1"></i>
+                  Stock válido
+                </div>
+              </div>
+            </div>
+
+            <!-- Categoría -->
+            <div class="mb-4">
+              <label for="category" class="form-label">
+                <i class="fas fa-folder me-1"></i>
+                Categoría
+                <small class="text-muted">(Opcional)</small>
+              </label>
+              <select 
+                id="category" 
+                formControlName="category" 
+                class="form-select"
+                [class.is-invalid]="isFieldInvalid('category')"
+                [class.is-valid]="isFieldValid('category')">
+                <option value="">Seleccionar categoría</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Books">Books</option>
+                <option value="Home & Garden">Home & Garden</option>
+                <option value="Sports">Sports</option>
+                <option value="Toys">Toys</option>
+                <option value="Automotive">Automotive</option>
+                <option value="Health & Beauty">Health & Beauty</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('category')">
+                <i class="fas fa-exclamation-circle me-1"></i>
+                {{ getFieldError('category') }}
+              </div>
+              <div class="valid-feedback" *ngIf="isFieldValid('category')">
+                <i class="fas fa-check-circle me-1"></i>
+                Categoría válida
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-flex gap-3 justify-content-end">
+              <button 
+                type="button" 
+                class="btn btn-outline-secondary" 
+                (click)="goBack()"
+                [disabled]="isLoading">
+                <i class="fas fa-times me-1"></i>
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-outline-warning" 
+                (click)="resetForm()"
+                [disabled]="isLoading || productForm.pristine">
+                <i class="fas fa-undo me-1"></i>
+                Limpiar
+              </button>
+              <button 
+                type="submit" 
+                class="btn btn-primary" 
+                [disabled]="productForm.invalid || isLoading">
+                <i class="fas fa-{{ isLoading ? 'spinner fa-spin' : (isEditMode ? 'save' : 'plus') }} me-1"></i>
+                {{ isLoading ? 'Guardando...' : (isEditMode ? 'Actualizar Producto' : 'Crear Producto') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
