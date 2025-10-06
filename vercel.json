@@ -1,11 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "dist/gestion-productos/**/*",
-      "use": "@vercel/static"
-    }
-  ],
+  "buildCommand": "ng build --configuration production",
+  "outputDirectory": "dist/gestion-productos/browser",
   "rewrites": [
     {
       "source": "/(.*)",
