@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -15,12 +15,17 @@ import { Product, CreateProduct, UpdateProduct, LoadingState } from '../../../..
   styleUrls: ['./product-form.component.scss']
 })
 export class ProductFormComponent implements OnInit, OnDestroy {
+  @Output() productCreated = new EventEmitter<void>();
+  
   productForm!: FormGroup;
   isEditMode = false;
   isLoading = false;
   errorMessage = '';
   successMessage = '';
   productId: number | null = null;
+  
+  // Form Tabs
+  activeFormTab: 'basic' | 'details' | 'inventory' = 'basic';
   
   private destroy$ = new Subject<void>();
 
@@ -137,6 +142,12 @@ export class ProductFormComponent implements OnInit, OnDestroy {
         console.log('✅ Producto creado:', newProduct);
         this.successMessage = 'Producto creado exitosamente';
         this.isLoading = false;
+        
+        // Emitir evento para notificar al componente padre
+        this.productCreated.emit();
+        
+        // Limpiar el formulario
+        this.resetForm();
         
         // Redirigir después de 2 segundos
         setTimeout(() => {
@@ -255,6 +266,11 @@ export class ProductFormComponent implements OnInit, OnDestroy {
   private clearMessages(): void {
     this.errorMessage = '';
     this.successMessage = '';
+  }
+
+  // Form Tab Navigation
+  setActiveFormTab(tab: 'basic' | 'details' | 'inventory'): void {
+    this.activeFormTab = tab;
   }
 
   goBack(): void {

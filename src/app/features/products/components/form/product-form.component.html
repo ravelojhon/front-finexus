@@ -66,19 +66,19 @@
           <div class="border-bottom">
             <ul class="nav nav-tabs form-tabs" role="tablist">
               <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic" type="button" role="tab" aria-controls="basic" aria-selected="true">
+                <button class="nav-link" [class.active]="activeFormTab === 'basic'" (click)="setActiveFormTab('basic')" type="button" role="tab">
                   <i class="fas fa-info-circle me-2"></i>
                   Información Básica
                 </button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="false">
+                <button class="nav-link" [class.active]="activeFormTab === 'details'" (click)="setActiveFormTab('details')" type="button" role="tab">
                   <i class="fas fa-cogs me-2"></i>
                   Detalles
                 </button>
               </li>
               <li class="nav-item" role="presentation">
-                <button class="nav-link" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab" aria-controls="inventory" aria-selected="false">
+                <button class="nav-link" [class.active]="activeFormTab === 'inventory'" (click)="setActiveFormTab('inventory')" type="button" role="tab">
                   <i class="fas fa-boxes me-2"></i>
                   Inventario
                 </button>
@@ -90,7 +90,7 @@
           <div class="tab-content p-4">
             <form [formGroup]="productForm" (ngSubmit)="onSubmit()" novalidate>
               <!-- Basic Information Tab -->
-              <div class="tab-pane fade show active" id="basic" role="tabpanel" aria-labelledby="basic-tab">
+              <div class="tab-pane fade" [class.show]="activeFormTab === 'basic'" [class.active]="activeFormTab === 'basic'" role="tabpanel">
                 <div class="row">
                   <div class="col-12">
                     <h5 class="mb-4 text-primary">
@@ -153,7 +153,7 @@
               </div>
 
               <!-- Details Tab -->
-              <div class="tab-pane fade" id="details" role="tabpanel" aria-labelledby="details-tab">
+              <div class="tab-pane fade" [class.show]="activeFormTab === 'details'" [class.active]="activeFormTab === 'details'" role="tabpanel">
                 <div class="row">
                   <div class="col-12">
                     <h5 class="mb-4 text-primary">
@@ -200,7 +200,7 @@
               </div>
 
               <!-- Inventory Tab -->
-              <div class="tab-pane fade" id="inventory" role="tabpanel" aria-labelledby="inventory-tab">
+              <div class="tab-pane fade" [class.show]="activeFormTab === 'inventory'" [class.active]="activeFormTab === 'inventory'" role="tabpanel">
                 <div class="row">
                   <div class="col-12">
                     <h5 class="mb-4 text-primary">

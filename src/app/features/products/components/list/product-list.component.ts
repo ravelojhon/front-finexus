@@ -22,6 +22,9 @@ export class ProductListComponent implements OnInit, OnDestroy {
   errorMessage = '';
   deletingProductId: number | null = null;
   
+  // Tabs
+  activeTab: 'list' | 'add' = 'list';
+  
   // Filtros
   searchTerm = '';
   selectedCategory = '';
@@ -227,11 +230,19 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   // Métodos de navegación de tabs
+  setActiveTab(tab: 'list' | 'add'): void {
+    this.activeTab = tab;
+  }
+
   switchToAddTab(): void {
-    const addTab = document.getElementById('add-tab') as HTMLButtonElement;
-    if (addTab) {
-      addTab.click();
-    }
+    this.setActiveTab('add');
+  }
+
+  onProductCreated(): void {
+    // Volver al tab de listado después de crear un producto
+    this.setActiveTab('list');
+    // Recargar la lista de productos
+    this.loadProducts();
   }
 
   // Métodos de utilidad para badges
